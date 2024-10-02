@@ -1,108 +1,123 @@
+// App.jsx
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const questions = [
-  {
-    question: "What is the capital of France?",
-    options: ["Berlin", "Madrid", "Paris", "Rome"],
-    correctAnswer: "Paris"
-  },
-  {
-    question: "Which planet is known as the Red Planet?",
-    options: ["Mars", "Jupiter", "Venus", "Mercury"],
-    correctAnswer: "Mars"
-  },
-  // Add more questions here
-];
+const App = () => {
+  const [gridSize, setGridSize] = useState(10);
+  const [grid, setGrid] = useState([]);
+  const [words, setWords] = useState([]);
+  const [foundWords, setFoundWords] = useState([]);
+  const [gameStatus, setGameStatus] = useState('playing');
 
-function QuizQuestion({ question, currentQuestion, totalQuestions, onAnswer }) {
-  return (
-    <Card className="w-full max-w-lg mx-auto my-4">
-      <CardHeader>
-        <CardTitle>Question {currentQuestion + 1}/{totalQuestions}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>{question.question}</p>
-        <div className="mt-4 space-y-2">
-          {question.options.map((option, idx) => (
-            <Button 
-              key={idx} 
-              variant="outline"
-              className="w-full"
-              onClick={() => onAnswer(option === question.correctAnswer)}>
-              {option}
-            </Button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+  const directions = [
+    [0, 1],  // horizontal
+    [1, 0],  // vertical
+    [1, 1],  // diagonal down-right
+    [-1, 1]  // diagonal up-right
+  ];
+  
+  const generateGrid = () => {
+    let newGrid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+    let newWords = ['REACT', 'JAVASCRIPT', 'NODE', 'TAILWIND', 'CSS', 'HTML'];
+    
+    newWords.forEach(word => {
+      let placed = false;
+      while (!placed) {
+        let dir = directions[Math.floor(Math.random() * directions.length)];
+        let x = Math.floor(Math.random() * gridSize);
+        let y = Math.floor(Math.random() * gridSize);
+        
+        if (canPlaceWord(newGrid, word, x, y, dir)) {
+          placeWord(newGrid, word, x, y, dir);
+          placed = true;
+        }
+      }
+    });
 
-function Result({ score, total, onRestart }) {
-  return (
-    <Card className="max-w-lg mx-auto my-4">
-      <CardContent>
-        <h2 className="text-2xl font-bold">Quiz Completed!</h2>
-        <p>Your Score: {score} out of {total}</p>
-        <Button onClick={onRestart} className="mt-4">Restart Quiz</Button>
-      </CardContent>
-    </Card>
-  );
-}
+    // Fill remaining spaces with random letters
+    fillRandomLetters(newGrid);
+    setGrid(newGrid);
+    setWords(newWords);
+    setFoundWords([]);
+  };
 
-export default function App() {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [score, setScore] = useState(0);
-  const [quizEnded, setQuizEnded] = useState(false);
-  const [time, setTime] = useState(0);
-  const [timerOn, setTimerOn] = useState(false);
+  const canPlaceWord = (grid, word, x, y, [dx, dy]) => {
+    for (let i = 0; i < word.length; i++) {
+      if (x < 0 || y < 0 || x >= gridSize || y >= gridSize || grid[y][x] !== '') return false;
+      x += dx;
+      y += dy;
+    }
+    return true;
+  };
+
+  const placeWord = (grid, word, x, y, [dx, dy]) => {
+    for (let char of word) {
+      grid[y][x] = char;
+      x += dx;
+      y += dy;
+    }
+  };
+  const fillRandomLetters = (grid) => {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        if (grid[i][j] === '') {
+          grid[i][j] = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+        }
+      }
+    }
+  };
+  
+
+  const handleCellClick = (x, y) => {
+    // Simplified selection logic, needs enhancement for actual gameplay
+    let word = grid[y][x];
+    if (words.includes(word) && !foundWords.includes(word)) {
+      setFoundWords(prev => [...prev, word]);
+      if (foundWords.length + 1 === words.length) {
+        setGameStatus('won');
+      }
+    }
+  };
 
   useEffect(() => {
-    let interval = null;
-    if (timerOn && !quizEnded) {
-      interval = setInterval(() => {
-        setTime(prevTime => prevTime + 1);
-      }, 1000);
-    } else if (!timerOn || quizEnded) {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [timerOn, quizEnded]);
-
-  const handleAnswer = (isCorrect) => {
-    if (isCorrect) setScore(score + 1);
-    if (currentQuestion + 1 < questions.length) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      setQuizEnded(true);
-    }
-    setTimerOn(true);
-  };
-
-  const restartQuiz = () => {
-    setCurrentQuestion(0);
-    setScore(0);
-    setQuizEnded(false);
-    setTime(0);
-    setTimerOn(false);
-  };
+    generateGrid();
+  }, [gridSize]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold mb-4">General Knowledge Quiz</h1>
-      {!quizEnded ? (
-        <QuizQuestion 
-          question={questions[currentQuestion]} 
-          currentQuestion={currentQuestion}
-          totalQuestions={questions.length}
-          onAnswer={handleAnswer} 
-        />
-      ) : (
-        <Result score={score} total={questions.length} onRestart={restartQuiz} />
-      )}
-      {timerOn && !quizEnded && <p className="mt-2">Time: {time} seconds</p>}
+    <div className="container mx-auto p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Word Search Game</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-10 gap-1">
+              {grid.map((row, y) => row.map((cell, x) => 
+                <div key={`${x}-${y}`} className="bg-gray-200 flex justify-center items-center h-8 w-8" onClick={() => handleCellClick(x, y)}>
+                  {cell}
+                </div>
+              ))}
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">Words to Find:</h3>
+              <ul>
+                {words.map(word => (
+                  <li key={word} className={`mb-1 ${foundWords.includes(word) ? 'line-through' : ''}`}>
+                    {word}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          {gameStatus === 'won' && <p className="mt-4 text-green-600">Congratulations! You found all the words!</p>}
+          <Button onClick={generateGrid} className="mt-4">New Game</Button>
+        </CardContent>
+      </Card>
     </div>
+    
   );
-}
+};
+
+export default App;
