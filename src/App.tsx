@@ -1,114 +1,135 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-const questions = [
-  {
-    question: "What is the capital of France?",
-    options: ["Berlin", "Madrid", "Paris", "Lisbon"],
-    correctAnswer: "Paris"
-  },
-  {
-    question: "Which planet is known as the Red Planet?",
-    options: ["Mars", "Venus", "Jupiter", "Saturn"],
-    correctAnswer: "Mars"
-  },
-  // Add more questions here...
+const directions = [
+  [0, 1],  // Horizontal
+  [1, 0],  // Vertical
+  [1, 1],  // Diagonal down
+  [-1, 1], // Diagonal up
 ];
 
-function Quiz() {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [score, setScore] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [quizEnded, setQuizEnded] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(60); // 60 seconds for the quiz
+function generateGrid(size, words) {
+  let grid = Array(size).fill().map(() => Array(size).fill(''));
+  const used = new Set();
 
-  useEffect(() => {
-    if (timeLeft > 0 && !quizEnded) {
-      const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timerId);
-    } else if (timeLeft === 0 && !quizEnded) {
-      setQuizEnded(true);
-    }
-  }, [timeLeft, quizEnded]);
-
-  const handleAnswer = (answer) => {
-    setSelectedAnswer(answer);
-    if (answer === questions[currentQuestion].correctAnswer) {
-      setScore(score + 1);
+  const placeWord = (word) => {
+    let placed = false;
+    while (!placed) {
+      const dir = directions[Math.floor(Math.random() * directions.length)];
+      const row = Math.floor(Math.random() * size);
+      const col = Math.floor(Math.random() * size);
+      if (canPlace(word, row, col, dir, size)) {
+        for (let i = 0; i < word.length; i++) {
+          grid[row + i * dir[0]][col + i * dir[1]] = word[i];
+        }
+        placed = true;
+      }
     }
   };
 
-  const nextQuestion = () => {
-    if (currentQuestion + 1 < questions.length) {
-      setCurrentQuestion(currentQuestion + 1);
-      setSelectedAnswer(null);
-    } else {
-      setQuizEnded(true);
+  const canPlace = (word, r, c, dir, size) => {
+    for (let i = 0; i < word.length; i++) {
+      const newR = r + i * dir[0], newC = c + i * dir[1];
+      if (newR < 0 || newR >= size || newC < 0 || newC >= size) return false;
+      if (grid[newR][newC] !== '' && grid[newR][newC] !== word[i]) return false;
     }
+    return true;
   };
 
-  const restartQuiz = () => {
-    setCurrentQuestion(0);
-    setScore(0);
-    setSelectedAnswer(null);
-    setQuizEnded(false);
-    setTimeLeft(60);
-  };
-
-  if (quizEnded) {
-    return (
-      <Card className="max-w-lg mx-auto mt-10">
-        <CardHeader>
-          <CardTitle>Quiz Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xl mb-4">Your Score: {score} out of {questions.length}</p>
-          <p>Time's up! You scored {score} points.</p>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={restartQuiz}>Restart Quiz</Button>
-        </CardFooter>
-      </Card>
-    );
+  words.forEach(placeWord);
+  // Fill remaining cells with random letters
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      if (!grid[i][j]) grid[i][j] = letters[Math.floor(Math.random() * letters.length)];
+    }
   }
 
-  const question = questions[currentQuestion];
-
-  return (
-    <Card className="max-w-lg mx-auto mt-10">
-      <CardHeader>
-        <CardTitle>{question.question}</CardTitle>
-        <CardDescription>Time Left: {timeLeft}s</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {question.options.map((option, index) => (
-          <Button 
-            key={index} 
-            variant={selectedAnswer === option ? "default" : "outline"}
-            onClick={() => handleAnswer(option)}
-            className="w-full mb-2"
-          >
-            {option}
-          </Button>
-        ))}
-      </CardContent>
-      <CardFooter>
-        {selectedAnswer && (
-          <Button onClick={nextQuestion} className="mt-4">
-            {currentQuestion + 1 === questions.length ? 'Finish' : 'Next Question'}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
-    
-  );
+  return grid;
 }
 
-export default function App() {
+function App() {
+  const [size, setSize] = useState(10);
+  const [words, setWords] = useState(['REACT', 'TAILWIND', 'SHADCN', 'GRID', 'GAME']);
+  const [grid, setGrid] = useState(() => generateGrid(size, words));
+  const [selected, setSelected] = useState([]);
+  const [foundWords, setFoundWords] = useState(new Set());
+  const [gameOver, setGameOver] = useState(false);
+
+  useEffect(() => {
+    if (foundWords.size === words.length) {
+      setGameOver(true);
+    }
+  }, [foundWords, words.length]);
+
+  const resetGame = () => {
+    setGrid(generateGrid(size, words));
+    setSelected([]);
+    setFoundWords(new Set());
+    setGameOver(false);
+  };
+
+  const handleCellClick = (row, col) => {
+    if (gameOver) return;
+    setSelected(prev => {
+      if (prev.length === 0 || (prev[prev.length - 1].row === row && prev[prev.length - 1].col === col)) {
+        return [...prev, {row, col}];
+      } else {
+        const word = prev.map(p => grid[p.row][p.col]).join('');
+        if (words.includes(word)) {
+          setFoundWords(prevSet => new Set(prevSet).add(word));
+        }
+        return [{row, col}];
+      }
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <Quiz />
+    <div className="flex flex-col items-center p-4 space-y-4 sm:space-y-6">
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <CardTitle>Word Search Game</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-10 gap-1">
+            {grid.flat().map((letter, index) => {
+              const { row, col } = { row: Math.floor(index / size), col: index % size };
+              return (
+                <div 
+                  key={index} 
+                  onClick={() => handleCellClick(row, col)} 
+                  className={cn(
+                    "w-8 h-8 flex items-center justify-center text-lg font-bold border rounded",
+                    selected.some(p => p.row === row && p.col === col) && "bg-blue-500 text-white",
+                    foundWords.has(selected.map(p => grid[p.row][p.col]).join('')) && "bg-green-500"
+                  )}
+                >
+                  {letter}
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            <h3 className="font-semibold">Words to Find:</h3>
+            <ul className="list-disc pl-5">
+              {words.map(word => (
+                <li key={word} className={foundWords.has(word) ? 'line-through text-green-500' : ''}>{word}</li>
+              ))}
+            </ul>
+          </div>
+          {gameOver && <p className="text-center text-green-600 font-bold">Congratulations! You found all the words!</p>}
+        </CardContent>
+        <CardFooter>
+          <Button onClick={resetGame}>New Game</Button>
+        </CardFooter>
+      </Card>
+      <div className="text-sm text-center">
+        Found: {foundWords.size}/{words.length}
+      </div>
     </div>
   );
 }
+
+export default App;
