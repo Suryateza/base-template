@@ -1,114 +1,94 @@
-// App.jsx
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Select, Card, CardContent, Textarea } from "@/components/ui";
-import { useSpeechRecognition, useSpeechSynthesis } from 'react-speech-kit';
+import { Button, Input, Select, SelectItem, Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui";
 
-const languages = {
-  'en': 'English',
-  'es': 'Spanish',
-  'fr': 'French',
-  'hi': 'Hindi',
-  'zh': 'Chinese',
-  // Add more languages as needed
-};
+const languages = [
+  { label: 'English', value: 'en' },
+  { label: 'Spanish', value: 'es' },
+  { label: 'French', value: 'fr' },
+  // Add more languages here
+];
 
-export default function App() {
-  const [text, setText] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
+function LanguageTranslator() {
+  const [textToTranslate, setTextToTranslate] = useState('');
   const [sourceLang, setSourceLang] = useState('auto');
   const [targetLang, setTargetLang] = useState('en');
-  const [history, setHistory] = useState([]);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [translatedText, setTranslatedText] = useState('');
+  const [translationHistory, setTranslationHistory] = useState([]);
 
-  const { listen, listening, stop } = useSpeechRecognition({
-    onResult: (result) => {
-      setText(result);
-    },
-  });
-
-  const { speak } = useSpeechSynthesis();
-
-  // Mock translation function - Replace with actual API call
-  const mockTranslate = (text, from, to) => {
-    // This should be an API call or use a translation library
-    return Promise.resolve(`Translated: ${text} from ${from} to ${to}`);
+  // Placeholder for translation logic
+  const translate = () => {
+    // Here you would typically call an API for translation
+    setTranslatedText(`Translated text in ${targetLang}: ${textToTranslate}`);
+    setTranslationHistory([...translationHistory, { original: textToTranslate, translation: translatedText, from: sourceLang, to: targetLang }]);
   };
 
-  const translate = async () => {
-    const result = await mockTranslate(text, sourceLang, targetLang);
-    setTranslatedText(result);
-    setHistory([...history, { original: text, translated: result }]);
+  const handleVoiceInput = () => {
+    // Placeholder for voice recognition logic
+    console.log('Voice input functionality to be implemented');
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
+  const handleVoiceOutput = () => {
+    // Placeholder for text-to-speech logic
+    console.log('Voice output functionality to be implemented');
   };
-
-  useEffect(() => {
-    if (localStorage.getItem('theme') === 'dark') {
-      setIsDarkMode(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
 
   return (
-    <div className={`min-h-screen bg-background ${isDarkMode ? 'dark' : ''}`}>
-      <Card className="max-w-3xl mx-auto mt-10 p-4">
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Language Translator</h1>
-            <Button onClick={toggleDarkMode}>
-              {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-            </Button>
-          </div>
-          <Select 
-            value={sourceLang} 
-            onChange={(e) => setSourceLang(e.target.value)}>
-            <option value="auto">Detect Language</option>
-            {Object.entries(languages).map(([code, name]) => 
-              <option key={code} value={code}>{name}</option>
-            )}
-          </Select>
+    <div className="flex flex-col items-center p-4 sm:p-8 space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Language Translator</CardTitle>
+          <CardDescription>Translate text effortlessly.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
           <Input 
-            value={text} 
-            onChange={(e) => setText(e.target.value)} 
-            placeholder="Enter text to translate"
-            className="my-2"
+            type="text" 
+            placeholder="Enter text to translate" 
+            value={textToTranslate} 
+            onChange={(e) => setTextToTranslate(e.target.value)} 
           />
-          <Button onClick={listen} disabled={listening}>
-            {listening ? 'Listening...' : 'Voice Input'}
-          </Button>
-          <Select 
-            value={targetLang} 
-            onChange={(e) => setTargetLang(e.target.value)}>
-            {Object.entries(languages).map(([code, name]) => 
-              <option key={code} value={code}>{name}</option>
-            )}
-          </Select>
-          <Button onClick={translate} className="my-2">Translate</Button>
-          <Textarea 
-            value={translatedText} 
-            readOnly 
-            placeholder="Translation will appear here"
-          />
-          <Button onClick={() => speak({ text: translatedText })}>Listen Translation</Button>
-          <div className="mt-4">
-            <h2 className="text-xl">Translation History</h2>
-            {history.map((item, index) => (
-              <div key={index}>{item.original} => {item.translated}</div>
-            ))}
+          <div className="flex space-x-2">
+            <Select value={sourceLang} onChange={(value) => setSourceLang(value)}>
+              <SelectItem value="auto">Detect Language</SelectItem>
+              {languages.map(lang => <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>)}
+            </Select>
+            <Select value={targetLang} onChange={(value) => setTargetLang(value)}>
+              {languages.map(lang => <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>)}
+            </Select>
           </div>
+          <Button onClick={translate}>Translate</Button>
+          <Button onClick={handleVoiceInput} className="mt-2">Voice Input</Button>
+          {translatedText && (
+            <div>
+              <p className="font-bold">Translated Text:</p>
+              <p>{translatedText}</p>
+              <Button onClick={handleVoiceOutput}>Listen</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <Card className="mt-4 w-full max-w-lg">
+        <CardHeader>
+          <CardTitle>Translation History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {translationHistory.map((item, index) => (
+            <div key={index} className="border-b pb-2 mb-2 last:border-b-0">
+              <p><strong>From {item.from === 'auto' ? 'Auto' : languages.find(l => l.value === item.from)?.label} to {languages.find(l => l.value === item.to)?.label}</strong></p>
+              <p>Original: {item.original}</p>
+              <p>Translation: {item.translation}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 dark:text-white">
+      <LanguageTranslator />
     </div>
   );
 }
