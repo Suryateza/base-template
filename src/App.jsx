@@ -1,35 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { format, addMonths, subMonths, startOfWeek, addDays, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle,CardFooter,CardDescription, } from "@/components/ui/card";
-import {
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle,
+  Button,
+  Input,
+  Textarea,
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-
-
-//import { 
-//   Card, 
-//   CardContent, 
-//   CardDescription, 
-//   CardFooter, 
-//   CardHeader, 
-//   CardTitle,
-//   Button,
-//   Input,
-//   Textarea,
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogDescription,
-//   DialogFooter
-// } from "@/components/ui";
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui";
 
 function App() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
