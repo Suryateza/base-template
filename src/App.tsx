@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -10,30 +10,32 @@ const App = () => {
   const [selectedCells, setSelectedCells] = useState([]);
   const [highlightedCells, setHighlightedCells] = useState([]);
   const [score, setScore] = useState(0);
-  const [gameStatus, setGameStatus] = useState('playing');
+  const [gameStatus, setGameStatus] = useState("playing");
   const [timer, setTimer] = useState(300); // 5 minutes timer
 
   const directions = [
-    [0, 1],  // horizontal
-    [1, 0],  // vertical
-    [1, 1],  // diagonal down-right
-    [-1, 1]  // diagonal up-right
+    [0, 1], // horizontal
+    [1, 0], // vertical
+    [1, 1], // diagonal down-right
+    [-1, 1], // diagonal up-right
   ];
 
   useEffect(() => {
-    if (timer > 0 && gameStatus === 'playing') {
+    if (timer > 0 && gameStatus === "playing") {
       const intervalId = setInterval(() => setTimer(timer - 1), 1000);
       return () => clearInterval(intervalId);
     } else if (timer === 0) {
-      setGameStatus('lost');
+      setGameStatus("lost");
     }
   }, [timer, gameStatus]);
 
   const generateGrid = useCallback(() => {
-    let newGrid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
-    let newWords = ['REACT', 'JAVASCRIPT', 'NODE', 'TAILWIND', 'CSS', 'HTML'];
+    let newGrid = Array(gridSize)
+      .fill()
+      .map(() => Array(gridSize).fill(""));
+    let newWords = ["REACT", "JAVASCRIPT", "NODE", "TAILWIND", "CSS", "HTML"];
 
-    newWords.forEach(word => {
+    newWords.forEach((word) => {
       let placed = false;
       while (!placed) {
         let dir = directions[Math.floor(Math.random() * directions.length)];
@@ -54,13 +56,14 @@ const App = () => {
     setHighlightedCells([]);
     setSelectedCells([]);
     setScore(0);
-    setTimer(300); 
-    setGameStatus('playing');
+    setTimer(300);
+    setGameStatus("playing");
   }, [gridSize]);
 
   const canPlaceWord = (grid, word, x, y, [dx, dy]) => {
     for (let i = 0; i < word.length; i++) {
-      if (x < 0 || y < 0 || x >= gridSize || y >= gridSize || grid[y][x] !== '') return false;
+      if (x < 0 || y < 0 || x >= gridSize || y >= gridSize || grid[y][x] !== "")
+        return false;
       x += dx;
       y += dy;
     }
@@ -76,21 +79,23 @@ const App = () => {
   };
 
   const fillRandomLetters = (grid) => {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     for (let i = 0; i < gridSize; i++) {
       for (let j = 0; j < gridSize; j++) {
-        if (grid[i][j] === '') {
-          grid[i][j] = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+        if (grid[i][j] === "") {
+          grid[i][j] = alphabet.charAt(
+            Math.floor(Math.random() * alphabet.length)
+          );
         }
       }
     }
   };
 
   const handleCellClick = (x, y) => {
-    setSelectedCells(prev => {
-      const alreadySelected = prev.some(cell => cell.x === x && cell.y === y);
+    setSelectedCells((prev) => {
+      const alreadySelected = prev.some((cell) => cell.x === x && cell.y === y);
       if (alreadySelected) {
-        return prev.filter(cell => !(cell.x === x && cell.y === y));
+        return prev.filter((cell) => !(cell.x === x && cell.y === y));
       } else {
         const newSelection = [...prev, { x, y }];
         checkForMatch(newSelection);
@@ -100,19 +105,25 @@ const App = () => {
   };
 
   const checkForMatch = (cells) => {
-    const selectedWord = cells.map(({ x, y }) => grid[y][x]).join('');
-    const reversedWord = cells.map(({ x, y }) => grid[y][x]).reverse().join('');
+    const selectedWord = cells.map(({ x, y }) => grid[y][x]).join("");
+    const reversedWord = cells
+      .map(({ x, y }) => grid[y][x])
+      .reverse()
+      .join("");
 
-    if ((words.includes(selectedWord) || words.includes(reversedWord)) && !foundWords.includes(selectedWord)) {
-      setFoundWords(prev => [...prev, selectedWord]);
-      setScore(prev => prev + 10);
+    if (
+      (words.includes(selectedWord) || words.includes(reversedWord)) &&
+      !foundWords.includes(selectedWord)
+    ) {
+      setFoundWords((prev) => [...prev, selectedWord]);
+      setScore((prev) => prev + 10);
       highlightWord(cells);
       setSelectedCells([]);
     }
   };
 
   const highlightWord = (cells) => {
-    setHighlightedCells(prev => [...prev, ...cells]);
+    setHighlightedCells((prev) => [...prev, ...cells]);
   };
 
   useEffect(() => {
@@ -140,8 +151,15 @@ const App = () => {
             <div className="mb-4">
               <h3>Words to Find:</h3>
               <ul>
-                {words.map(word => (
-                  <li key={word} className={foundWords.includes(word) ? 'line-through text-gray-400' : ''}>
+                {words.map((word) => (
+                  <li
+                    key={word}
+                    className={
+                      foundWords.includes(word)
+                        ? "line-through text-gray-400"
+                        : ""
+                    }
+                  >
                     {word}
                   </li>
                 ))}
@@ -149,11 +167,21 @@ const App = () => {
             </div>
             <div className="mb-4">
               <p>Score: {score}</p>
-              <p>Time Left: {`${Math.floor(timer / 60)}:${String(timer % 60).padStart(2, '0')}`}</p>
+              <p>
+                Time Left:{" "}
+                {`${Math.floor(timer / 60)}:${String(timer % 60).padStart(
+                  2,
+                  "0"
+                )}`}
+              </p>
             </div>
             <div className="mb-4">
               <h4>Select Grid Size:</h4>
-              <select value={gridSize} onChange={handleGridSizeChange} className="p-2 border rounded">
+              <select
+                value={gridSize}
+                onChange={handleGridSizeChange}
+                className="p-2 border rounded"
+              >
                 <option value={10}>10x10</option>
                 <option value={15}>15x15</option>
               </select>
@@ -175,23 +203,29 @@ const App = () => {
             <div
               className={`grid gap-1`}
               style={{
-                gridTemplateColumns: `repeat(${gridSize}, 2.5rem)`, 
-                gridTemplateRows: `repeat(${gridSize}, 2.5rem)`,     
+                gridTemplateColumns: `repeat(${gridSize}, 2.5rem)`,
+                gridTemplateRows: `repeat(${gridSize}, 2.5rem)`,
               }}
             >
-              {grid.map((row, y) => row.map((cell, x) => (
-                <div
-                  key={`${x}-${y}`}
-                  className={`bg-gray-200 flex justify-center items-center h-10 w-10 cursor-pointer transition-colors ${
-                    selectedCells.some(c => c.x === x && c.y === y) ? 'bg-yellow-300' : ''
-                  } ${
-                    highlightedCells.some(c => c.x === x && c.y === y) ? 'bg-green-400 text-white font-bold' : ''
-                  }`}
-                  onClick={() => handleCellClick(x, y)}
-                >
-                  {cell}
-                </div>
-              )))}
+              {grid.map((row, y) =>
+                row.map((cell, x) => (
+                  <div
+                    key={`${x}-${y}`}
+                    className={`bg-gray-200 flex justify-center items-center h-10 w-10 cursor-pointer transition-colors ${
+                      selectedCells.some((c) => c.x === x && c.y === y)
+                        ? "bg-yellow-300"
+                        : ""
+                    } ${
+                      highlightedCells.some((c) => c.x === x && c.y === y)
+                        ? "bg-green-400 text-white font-bold"
+                        : ""
+                    }`}
+                    onClick={() => handleCellClick(x, y)}
+                  >
+                    {cell}
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
