@@ -7,7 +7,7 @@ const FruitSelector = () => {
 
   return (
     <div className="flex justify-center items-center h-screen">
-      Paste complete component code
+      Paste complete component code sdfdf
     </div>
   );
 };
