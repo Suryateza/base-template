@@ -1,130 +1,140 @@
 import React, { useState, useEffect } from 'react';
 import { format, addMonths, subMonths, startOfWeek, addDays, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
   CardTitle,
-  Button,
-  Input,
-  Textarea,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui";
+} from "@/components/ui/dialog"
+
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 function App() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [events, setEvents] = useState(() => JSON.parse(localStorage.getItem('events') || '[]'));
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [eventForm, setEventForm] = useState({ title: '', description: '', time: '' });
+  const [events, setEvents] = useState({});
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState({ title: '', description: '', time: '' });
 
+  // Load events from localStorage or initialize
+  useEffect(() => {
+    const savedEvents = JSON.parse(localStorage.getItem('events') || '{}');
+    setEvents(savedEvents);
+  }, []);
+
+  // Save events to localStorage
   useEffect(() => {
     localStorage.setItem('events', JSON.stringify(events));
   }, [events]);
 
-  const startDay = startOfWeek(currentMonth);
-  const endDay = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: startDay, end: addDays(endOfMonth(currentMonth), 6 - endDay.getDay()) });
+  const days = eachDayOfInterval({
+    start: startOfWeek(currentMonth),
+    end: addDays(endOfMonth(currentMonth), 6 - endOfMonth(currentMonth).getDay()),
+  });
 
-  const handleDateClick = (day) => {
-    setSelectedDate(day);
-    setIsEventModalOpen(true);
-    setEventForm({ title: '', description: '', time: '' });
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    setCurrentEvent({ date: date, title: '', description: '', time: '' });
+    setIsOpen(true);
   };
 
-  const handleAddEvent = () => {
-    const newEvent = { ...eventForm, date: selectedDate };
-    setEvents(prev => [...prev, newEvent]);
-    setIsEventModalOpen(false);
+  const handleEventSave = () => {
+    const eventId = currentEvent.date.toISOString();
+    setEvents({ ...events, [eventId]: currentEvent });
+    setIsOpen(false);
   };
 
-  const handleDeleteEvent = (index) => {
-    setEvents(events.filter((_, i) => i !== index));
+  const handleDeleteEvent = (date) => {
+    const newEvents = { ...events };
+    delete newEvents[date.toISOString()];
+    setEvents(newEvents);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
+    <div className="container mx-auto p-4">
+      <Card>
+        <CardHeader className="flex justify-between items-center">
           <CardTitle>Event Calendar</CardTitle>
-          <CardDescription>Navigate and manage your events.</CardDescription>
+          <div>
+            <Button variant="outline" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>&lt;</Button>
+            <span className="mx-2">{format(currentMonth, 'MMMM yyyy')}</span>
+            <Button variant="outline" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>&gt;</Button>
+          </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-7 gap-2 text-center">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="font-bold">{day}</div>
-          ))}
-          {days.map((day, dayIdx) => (
-            <div 
-              key={dayIdx} 
-              onClick={() => handleDateClick(day)}
-              className={`
-                p-2 rounded cursor-pointer
-                ${!isSameDay(day, selectedDate) && 'hover:bg-gray-200'}
-                ${isSameDay(day, selectedDate) ? 'bg-blue-500 text-white' : ''}
-                ${day.getMonth() !== currentMonth.getMonth() ? 'text-gray-400' : ''}
-              `}
-            >
-              {format(day, 'd')}
-              {events.some(event => isSameDay(event.date, day)) && <div className="mt-1 h-2 w-2 bg-red-500 rounded-full mx-auto"></div>}
-            </div>
-          ))}
+        <CardContent>
+          <div className="grid grid-cols-7 gap-2 text-center">
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => 
+              <div key={day} className="font-bold">{day}</div>
+            )}
+            {days.map((day) => {
+              const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+              const hasEvent = events[day.toISOString()] !== undefined;
+              return (
+                <div 
+                  key={day.toString()} 
+                  onClick={() => handleDateSelect(day)} 
+                  className={cn(
+                    "p-2 cursor-pointer rounded",
+                    isCurrentMonth ? "text-black" : "text-gray-400",
+                    isSameDay(day, selectedDate) && "bg-blue-500 text-white",
+                    hasEvent && "bg-yellow-100"
+                  )}
+                >
+                  {format(day, 'd')}
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>Previous</Button>
-          <Button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>Next</Button>
-        </CardFooter>
       </Card>
 
-      <Dialog open={isEventModalOpen} onOpenChange={setIsEventModalOpen}>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{format(selectedDate, 'PP')}</DialogTitle>
-            <DialogDescription>Add or edit your event here.</DialogDescription>
+            <DialogTitle>{format(currentEvent.date, 'PP')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <Input 
-              value={eventForm.title} 
-              onChange={(e) => setEventForm({...eventForm, title: e.target.value})} 
-              placeholder="Event Title" 
-            />
-            <Textarea 
-              value={eventForm.description} 
-              onChange={(e) => setEventForm({...eventForm, description: e.target.value})} 
-              placeholder="Event Description" 
-            />
-            <Input 
-              type="time" 
-              value={eventForm.time} 
-              onChange={(e) => setEventForm({...eventForm, time: e.target.value})} 
-            />
+            <Input value={currentEvent.title} onChange={(e) => setCurrentEvent({ ...currentEvent, title: e.target.value })} placeholder="Event Title" />
+            <Textarea value={currentEvent.description} onChange={(e) => setCurrentEvent({ ...currentEvent, description: e.target.value })} placeholder="Description" />
+            <Input type="time" value={currentEvent.time} onChange={(e) => setCurrentEvent({ ...currentEvent, time: e.target.value })} />
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleAddEvent}>Save Event</Button>
+            <Button onClick={handleEventSave}>Save Event</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <div className="mt-4 w-full max-w-2xl">
-        {events.filter(event => isSameDay(event.date, selectedDate)).map((event, index) => (
-          <Card key={index} className="mt-2">
+      {events[selectedDate.toISOString()] && (
+        <div className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{events[selectedDate.toISOString()].title}</CardTitle>
+            </CardHeader>
             <CardContent>
-              <CardTitle>{event.title}</CardTitle>
-              <p>{event.description}</p>
-              <p>{event.time}</p>
+              <p>{events[selectedDate.toISOString()].description}</p>
+              <p>Time: {events[selectedDate.toISOString()].time}</p>
             </CardContent>
             <CardFooter>
-              <Button onClick={() => handleDeleteEvent(index)} variant="destructive">Delete</Button>
+              <Button variant="destructive" onClick={() => handleDeleteEvent(selectedDate)}>
+                <TrashIcon className="mr-2" /> Delete
+              </Button>
             </CardFooter>
           </Card>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
