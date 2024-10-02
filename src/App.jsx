@@ -18,7 +18,7 @@ const calculateWPM = (typedText, timeElapsed) => {
 
 const calculateAccuracy = (typedText, originalText) => {
     let correctChars = 0;
-    for (let i = 0; i < typedText.length; i++) {
+    for (let i = 0; typedText[i] && i < originalText.length; i++) {
         if (typedText[i] === originalText[i]) {
             correctChars++;
         }
@@ -65,7 +65,7 @@ export default function App() {
         return hardcodedPassage.split("").map((char, idx) => {
             let color = "";
             if (idx < typedText.length) {
-                color = typedText[idx] === char ? "text-green-600" : "text-red-600";
+                color = typedText[idx] === char ? "text-green-500" : "text-red-500";
             }
             return (
                 <span key={idx} className={color}>
@@ -76,16 +76,14 @@ export default function App() {
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
-            <Card className="w-full max-w-3xl p-6 bg-white shadow-lg">
-                <CardHeader>
-                    <CardTitle>Typing Speed Test</CardTitle>
-                    <CardDescription>
-                        Type the passage below as fast and accurately as you can.
-                    </CardDescription>
+        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 p-4">
+            <Card className="w-full max-w-xl p-4 bg-white shadow-lg rounded-lg">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-3xl font-bold text-blue-700">Typing Speed Game</CardTitle>
+                    <CardDescription className="text-lg text-gray-500 mt-2">Type the passage as fast as you can!</CardDescription>
                 </CardHeader>
                 <CardContent className="mt-4">
-                    <div className="text-lg font-medium mb-6">
+                    <div className="text-md font-medium mb-4 leading-relaxed border border-gray-300 p-3 rounded-lg bg-gray-100 max-h-40 overflow-auto">
                         {renderHighlightedText()}
                     </div>
                     <textarea
@@ -93,27 +91,27 @@ export default function App() {
                         onChange={handleInputChange}
                         placeholder="Start typing here..."
                         disabled={timeLeft === 0}
-                        className="w-full h-32 p-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                        className="w-full h-24 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800 text-md resize-none"
                     />
                 </CardContent>
-                <CardFooter className="flex justify-between mt-4">
-                    <div className="flex space-x-4">
-                        <div className="text-center">
-                            <h3 className="text-gray-700 text-lg">Time Left</h3>
-                            <p className="text-2xl font-bold">{timeLeft}s</p>
+                <CardFooter className="flex justify-between mt-6">
+                    <div className="flex space-x-6 text-center">
+                        <div>
+                            <h3 className="text-gray-700 text-md">Time Left</h3>
+                            <p className="text-xl font-bold text-purple-600 animate-pulse">{timeLeft}s</p>
                         </div>
-                        <div className="text-center">
-                            <h3 className="text-gray-700 text-lg">WPM</h3>
-                            <p className="text-2xl font-bold">{wpm}</p>
+                        <div>
+                            <h3 className="text-gray-700 text-md">WPM</h3>
+                            <p className="text-xl font-bold text-blue-600">{wpm}</p>
                         </div>
-                        <div className="text-center">
-                            <h3 className="text-gray-700 text-lg">Accuracy</h3>
-                            <p className="text-2xl font-bold">{accuracy}%</p>
+                        <div>
+                            <h3 className="text-gray-700 text-md">Accuracy</h3>
+                            <p className="text-xl font-bold text-green-600">{accuracy}%</p>
                         </div>
                     </div>
                     <button
                         onClick={resetTest}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                        className="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105"
                     >
                         Reset
                     </button>
