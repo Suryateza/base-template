@@ -101,6 +101,7 @@ function Quiz() {
         )}
       </CardFooter>
     </Card>
+    
   );
 }
 
