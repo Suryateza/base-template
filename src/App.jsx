@@ -1,82 +1,114 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// App.jsx
+import React, { useState, useEffect } from 'react';
+import { Input, Button, Select, Card, CardContent, Textarea } from "@/components/ui";
+import { useSpeechRecognition, useSpeechSynthesis } from 'react-speech-kit';
 
-// Mock data for languages
-const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', value: 'French' },
-  { value: 'de', label: 'German' },
+const languages = {
+  'en': 'English',
+  'es': 'Spanish',
+  'fr': 'French',
+  'hi': 'Hindi',
+  'zh': 'Chinese',
   // Add more languages as needed
-];
-
-function Translator() {
-  const [text, setText] = useState('');
-  const [sourceLang, setSourceLang] = useState('en');
-  const [targetLang, setTargetLang] = useState('es');
-  const [translatedText, setTranslatedText] = useState('');
-
-  const handleTranslate = () => {
-    // Here would be the actual translation logic with an API call
-    // For this example, we'll just return a mock translation
-    setTranslatedText(`[Translated to ${languages.find(lang => lang.value === targetLang).label}:] ${text}`);
-  };
-
-  return (
-    <Card className="max-w-lg mx-auto mt-10 p-4 sm:p-6">
-      <CardHeader>
-        <CardTitle>Language Translator</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Input 
-          type="text" 
-          placeholder="Enter text to translate" 
-          value={text} 
-          onChange={(e) => setText(e.target.value)} 
-        />
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <Select onValueChange={setSourceLang}>
-            <SelectTrigger className="w-full sm:w-1/2">
-              <SelectValue placeholder="Source Language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map(lang => (
-                <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select onValueChange={setTargetLang}>
-            <SelectTrigger className="w-full sm:w-1/2">
-              <SelectValue placeholder="Target Language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map(lang => (
-                <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Button onClick={handleTranslate}>Translate</Button>
-        {translatedText && (
-          <div className="mt-4 p-2 bg-secondary rounded-lg">
-            <p>{translatedText}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+};
 
 export default function App() {
+  const [text, setText] = useState('');
+  const [translatedText, setTranslatedText] = useState('');
+  const [sourceLang, setSourceLang] = useState('auto');
+  const [targetLang, setTargetLang] = useState('en');
+  const [history, setHistory] = useState([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const { listen, listening, stop } = useSpeechRecognition({
+    onResult: (result) => {
+      setText(result);
+    },
+  });
+
+  const { speak } = useSpeechSynthesis();
+
+  // Mock translation function - Replace with actual API call
+  const mockTranslate = (text, from, to) => {
+    // This should be an API call or use a translation library
+    return Promise.resolve(`Translated: ${text} from ${from} to ${to}`);
+  };
+
+  const translate = async () => {
+    const result = await mockTranslate(text, sourceLang, targetLang);
+    setTranslatedText(result);
+    setHistory([...history, { original: text, translated: result }]);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  useEffect(() => {
+    if (localStorage.getItem('theme') === 'dark') {
+      setIsDarkMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <Translator />
-      <footer className="text-center mt-8 text-sm text-muted-foreground">
-        <p>Happy translating! For help, check the help section.</p>
-      </footer>
+    <div className={`min-h-screen bg-background ${isDarkMode ? 'dark' : ''}`}>
+      <Card className="max-w-3xl mx-auto mt-10 p-4">
+        <CardContent>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Language Translator</h1>
+            <Button onClick={toggleDarkMode}>
+              {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            </Button>
+          </div>
+          <Select 
+            value={sourceLang} 
+            onChange={(e) => setSourceLang(e.target.value)}>
+            <option value="auto">Detect Language</option>
+            {Object.entries(languages).map(([code, name]) => 
+              <option key={code} value={code}>{name}</option>
+            )}
+          </Select>
+          <Input 
+            value={text} 
+            onChange={(e) => setText(e.target.value)} 
+            placeholder="Enter text to translate"
+            className="my-2"
+          />
+          <Button onClick={listen} disabled={listening}>
+            {listening ? 'Listening...' : 'Voice Input'}
+          </Button>
+          <Select 
+            value={targetLang} 
+            onChange={(e) => setTargetLang(e.target.value)}>
+            {Object.entries(languages).map(([code, name]) => 
+              <option key={code} value={code}>{name}</option>
+            )}
+          </Select>
+          <Button onClick={translate} className="my-2">Translate</Button>
+          <Textarea 
+            value={translatedText} 
+            readOnly 
+            placeholder="Translation will appear here"
+          />
+          <Button onClick={() => speak({ text: translatedText })}>Listen Translation</Button>
+          <div className="mt-4">
+            <h2 className="text-xl">Translation History</h2>
+            {history.map((item, index) => (
+              <div key={index}>{item.original} => {item.translated}</div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
