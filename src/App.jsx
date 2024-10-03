@@ -1,12 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const DIFFICULTIES = {
-  easy: { rows: 5, cols: 5 },
-  medium: { rows: 10, cols: 10 },
-  hard: { rows: 15, cols: 15 }
-};
+import React, { useState, useEffect } from 'react';
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -16,136 +12,137 @@ function shuffleArray(array) {
   return array;
 }
 
-function generateCards(difficulty) {
-  const { rows, cols } = DIFFICULTIES[difficulty];
-  const totalCards = rows * cols;
-  let numbers = Array.from({length: totalCards / 2}, (_, i) => i + 1);
-  numbers = numbers.concat(numbers);
-  return shuffleArray(numbers).map((num, index) => ({
-    id: index,
-    number: num,
-    isFlipped: false,
-    isMatched: false
-  }));
+function generateNumbers(size) {
+  const numbers = Array.from({length: (size * size) / 2}, (_, i) => i + 1);
+  return shuffleArray([...numbers, ...numbers]);
 }
 
-function MemoryCard({ card, onCardClick }) {
-  return (
-    <Card 
-      className={`cursor-pointer ${card.isFlipped || card.isMatched ? 'bg-blue-200' : 'bg-gray-200'} transition-all duration-300`}
-      onClick={() => !card.isFlipped && !card.isMatched && onCardClick(card.id)}
-    >
-      <CardContent className="flex justify-center items-center">
-        {card.isFlipped || card.isMatched ? card.number : '?'}
-      </CardContent>
-    </Card>
-  );
-}
+const CardItem = ({ number, isFlipped, onClick }) => (
+  <Card className="w-20 h-20 sm:w-24 sm:h-24 cursor-pointer transform transition-transform duration-300 hover:scale-105">
+    <CardContent className="p-0 flex justify-center items-center h-full">
+      {isFlipped ? 
+        <div className="text-2xl">{number}</div> : 
+        <div className="bg-slate-200 w-full h-full flex items-center justify-center">?</div>
+      }
+    </CardContent>
+  </Card>
+);
 
-function Dashboard({ onStart, onReset, moves, time, onDifficultyChange, currentDifficulty }) {
+function GameBoard({ size }) {
+  const [cards, setCards] = useState(generateNumbers(size));
+  const [firstCard, setFirstCard] = useState(null);
+  const [secondCard, setSecondCard] = useState(null);
+  const [moves, setMoves] = useState(0);
+  const [freezeBoard, setFreezeBoard] = useState(false);
+
+  useEffect(() => {
+    if (firstCard && secondCard) {
+      setFreezeBoard(true);
+      const timer = setTimeout(() => {
+        if (firstCard.number === secondCard.number) {
+          setCards(prev => prev.map(card => 
+            card.id === firstCard.id || card.id === secondCard.id ? { ...card, matched: true } : card
+          ));
+        } else {
+          setCards(prev => prev.map(card => 
+            card.id === firstCard.id || card.id === secondCard.id ? { ...card, isFlipped: false } : card
+          ));
+        }
+        setFirstCard(null);
+        setSecondCard(null);
+        setFreezeBoard(false);
+        setMoves(m => m + 1);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [firstCard, secondCard]);
+
+  const handleCardClick = (card) => {
+    if (freezeBoard || card.isFlipped || card.matched) return;
+    if (!firstCard) {
+      setFirstCard(card);
+      setCards(prev => prev.map(c => c.id === card.id ? { ...c, isFlipped: true } : c));
+    } else if (!secondCard && card.id !== firstCard.id) {
+      setSecondCard(card);
+      setCards(prev => prev.map(c => c.id === card.id ? { ...c, isFlipped: true } : c));
+    }
+  };
+
+  const resetGame = () => {
+    setCards(shuffleArray(generateNumbers(size)));
+    setFirstCard(null);
+    setSecondCard(null);
+    setMoves(0);
+  };
+
   return (
-    <div className="flex flex-col space-y-4 p-4">
-      <Button onClick={onStart}>Start Game</Button>
-      <Button onClick={onReset}>Reset Game</Button>
-      <div>
-        <label>Difficulty: </label>
-        <select onChange={onDifficultyChange} value={currentDifficulty}>
-          {Object.keys(DIFFICULTIES).map(diff => (
-            <option key={diff} value={diff}>{diff}</option>
-          ))}
-        </select>
-      </div>
-      <div>Time: {time}s</div>
-      <div>Moves: {moves}</div>
+    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2">
+      {cards.map((card, index) => (
+        <CardItem 
+          key={index} 
+          number={card.number} 
+          isFlipped={card.isFlipped || card.matched} 
+          onClick={() => handleCardClick(card)}
+        />
+      ))}
+      <Button onClick={resetGame} className="col-span-4 sm:col-span-2 mt-4">Reset</Button>
+      <div className="col-span-4 sm:col-span-3 mt-4">Moves: {moves}</div>
     </div>
   );
 }
 
 export default function App() {
-  const [cards, setCards] = useState([]);
-  const [firstCard, setFirstCard] = useState(null);
-  const [secondCard, setSecondCard] = useState(null);
-  const [moves, setMoves] = useState(0);
+  const [gameSize, setGameSize] = useState(4);
   const [time, setTime] = useState(0);
-  const [isGameRunning, setIsGameRunning] = useState(false);
-  const [difficulty, setDifficulty] = useState('easy');
+  const [isGameActive, setIsGameActive] = useState(false);
 
   useEffect(() => {
-    let timer;
-    if (isGameRunning) {
-      timer = setInterval(() => setTime(prevTime => prevTime + 1), 1000);
+    let interval = null;
+    if (isGameActive) {
+      interval = setInterval(() => {
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
+    } else if (!isGameActive && time !== 0) {
+      clearInterval(interval);
     }
-    return () => clearInterval(timer);
-  }, [isGameRunning]);
-
-  const handleCardClick = (id) => {
-    if (firstCard === null) {
-      setFirstCard(id);
-      setCards(cards.map(c => c.id === id ? { ...c, isFlipped: true } : c));
-    } else if (secondCard === null && id !== firstCard) {
-      setSecondCard(id);
-      setCards(cards.map(c => c.id === id ? { ...c, isFlipped: true } : c));
-      setMoves(moves + 1);
-    }
-  };
-
-  useEffect(() => {
-    if (firstCard && secondCard) {
-      if (cards[firstCard].number === cards[secondCard].number) {
-        setCards(cards => cards.map(c => 
-          c.id === firstCard || c.id === secondCard ? { ...c, isMatched: true } : c
-        ));
-      } else {
-        setTimeout(() => {
-          setCards(cards => cards.map(c => 
-            c.id === firstCard || c.id === secondCard ? { ...c, isFlipped: false } : c
-          ));
-        }, 1000);
-      }
-      setFirstCard(null);
-      setSecondCard(null);
-    }
-  }, [firstCard, secondCard, cards]);
+    return () => clearInterval(interval);
+  }, [isGameActive, time]);
 
   const startGame = () => {
-    setCards(generateCards(difficulty));
-    setMoves(0);
+    setIsGameActive(true);
     setTime(0);
-    setIsGameRunning(true);
   };
 
-  const resetGame = () => {
-    setCards([]);
-    setFirstCard(null);
-    setSecondCard(null);
-    setMoves(0);
-    setTime(0);
-    setIsGameRunning(false);
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
-
-  const changeDifficulty = (event) => {
-    setDifficulty(event.target.value);
-    resetGame();
-  };
-
-  const { rows, cols } = DIFFICULTIES[difficulty];
 
   return (
     <div className="flex flex-col sm:flex-row min-h-screen bg-gray-100 p-4">
-      <div className="sm:w-3/4 grid grid-cols-5 sm:grid-cols-10 md:grid-cols-15 gap-4">
-        {cards.map(card => (
-          <MemoryCard key={card.id} card={card} onCardClick={handleCardClick} />
-        ))}
+      <div className="w-full sm:w-3/4 p-4">
+        <GameBoard size={gameSize} />
       </div>
-      <div className="sm:w-1/4 mt-4 sm:mt-0">
-        <Dashboard 
-          onStart={startGame} 
-          onReset={resetGame} 
-          moves={moves} 
-          time={time} 
-          onDifficultyChange={changeDifficulty}
-          currentDifficulty={difficulty}
-        />
+      <div className="w-full sm:w-1/4 p-4 bg-white rounded-lg shadow-md">
+        <Card>
+          <CardHeader>
+            <CardTitle>Memory Game</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Label htmlFor="gameSize">Difficulty</Label>
+            <RadioGroup value={gameSize.toString()} onValueChange={(value) => setGameSize(parseInt(value))} className="mt-2">
+              <RadioGroupItem value="4">4x4</RadioGroupItem>
+              <RadioGroupItem value="8">8x8</RadioGroupItem>
+              <RadioGroupItem value="10">10x10</RadioGroupItem>
+            </RadioGroup>
+            <Button onClick={startGame} className="mt-4 w-full">Start Game</Button>
+            <div className="mt-4">
+              <Label>Time: {formatTime(time)}</Label>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
