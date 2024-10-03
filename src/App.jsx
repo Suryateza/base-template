@@ -12,6 +12,7 @@ function App() {
   const [events, setEvents] = useState(() => JSON.parse(localStorage.getItem('events') || '[]'));
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', time: '' });
+  const [editingIndex, setEditingIndex] = useState(null); // Index of the event being edited
 
   useEffect(() => {
     localStorage.setItem('events', JSON.stringify(events));
@@ -25,12 +26,27 @@ function App() {
     setSelectedDate(day);
     setIsEventModalOpen(true);
     setEventForm({ title: '', description: '', time: '' });
+    setEditingIndex(null); // Reset editing index
   };
 
   const handleAddEvent = () => {
     const newEvent = { ...eventForm, date: selectedDate };
-    setEvents(prev => [...prev, newEvent]);
+    if (editingIndex !== null) {
+      // Update existing event
+      const updatedEvents = events.map((event, index) => (index === editingIndex ? newEvent : event));
+      setEvents(updatedEvents);
+    } else {
+      // Add new event
+      setEvents(prev => [...prev, newEvent]);
+    }
     setIsEventModalOpen(false);
+  };
+
+  const handleEditEvent = (index) => {
+    const eventToEdit = events[index];
+    setEventForm({ title: eventToEdit.title, description: eventToEdit.description, time: eventToEdit.time });
+    setEditingIndex(index); // Set index of the event being edited
+    setIsEventModalOpen(true); // Open the modal
   };
 
   const handleDeleteEvent = (index) => {
@@ -81,7 +97,7 @@ function App() {
         <DialogContent className="sm:max-w-[425px] bg-white shadow-lg rounded-lg border border-gray-200 transition-all duration-300">
           <DialogHeader className="bg-blue-500 text-white p-4 rounded-t-lg">
             <DialogTitle className="text-xl font-semibold">{format(selectedDate, 'PP')}</DialogTitle>
-            <DialogDescription className="text-red">Add or edit your event here.</DialogDescription>
+            <DialogDescription className ="text-red">{editingIndex !== null ? 'Edit your event here.' : 'Add a new event here.'}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 px-6">
             <Input
@@ -105,7 +121,7 @@ function App() {
           </div>
           <DialogFooter className="p-4 bg-gray-50 border-t rounded-b-lg">
             <Button type="submit" onClick={handleAddEvent} className="bg-red-500 hover:bg-blue-700 text-white shadow-md transition-transform transform hover:scale-105">
-              Save Event
+              {editingIndex !== null ? 'Update Event' : 'Save Event'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -120,6 +136,9 @@ function App() {
               <p className="text-gray-500 mt-1">{event.time}</p>
             </CardContent>
             <CardFooter className="flex justify-end p-4 bg-gray-50 border-t rounded-b-lg">
+              <Button onClick={() => handleEditEvent(index)} className="bg-blue-500 hover:bg-blue-700 text-white shadow-md transition-transform transform hover:scale-105 mr-2">
+                Edit
+              </Button>
               <Button onClick={() => handleDeleteEvent(index)} variant="destructive" className="bg-red-500 hover:bg-red-700 text-white shadow-md transition-transform transform hover:scale-105">
                 Delete
               </Button>
