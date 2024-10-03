@@ -1,123 +1,224 @@
 import React, { useState, useEffect } from "react";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
 } from "@/components/ui/card";
+import "./App.css"; // You can add your global Tailwind styles here
 
-const generateCards = () => {
-  const numbers = Array.from({ length: 8 }, (_, i) => i + 1);
-  const doubledNumbers = [...numbers, ...numbers];
-  return doubledNumbers.sort(() => Math.random() - 0.5);
+const generateCards = (size) => {
+    let totalCards = size * size;
+    if (totalCards % 2 !== 0) {
+        totalCards -= 1;
+    }
+    const cardValues = [...Array(totalCards / 2).keys()];
+    const cards = [...cardValues, ...cardValues].sort(() => Math.random() - 0.5);
+    return cards.map((value, index) => ({
+        id: index,
+        value,
+        flipped: false,
+        matched: false,
+    }));
 };
 
-export default function App() {
-  const [cards, setCards] = useState(generateCards());
-  const [flippedCards, setFlippedCards] = useState([]);
-  const [matchedCards, setMatchedCards] = useState([]);
-  const [moves, setMoves] = useState(0);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [time, setTime] = useState(0);
-  const [timerRunning, setTimerRunning] = useState(false);
-
-  useEffect(() => {
-    let timer;
-    if (timerRunning) {
-      timer = setInterval(() => {
-        setTime((prevTime) => prevTime + 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [timerRunning]);
-
-  useEffect(() => {
-    if (matchedCards.length === cards.length) {
-      setIsGameOver(true);
-      setTimerRunning(false);
-    }
-  }, [matchedCards, cards]);
-
-  const handleCardClick = (index) => {
-    if (flippedCards.length === 2 || flippedCards.includes(index) || matchedCards.includes(index)) {
-      return;
-    }
-    if (!timerRunning) setTimerRunning(true);
-
-    const newFlippedCards = [...flippedCards, index];
-    setFlippedCards(newFlippedCards);
-
-    if (newFlippedCards.length === 2) {
-      setMoves((prevMoves) => prevMoves + 1);
-
-      if (cards[newFlippedCards[0]] === cards[newFlippedCards[1]]) {
-        setMatchedCards([...matchedCards, ...newFlippedCards]);
-      }
-
-      setTimeout(() => {
-        setFlippedCards([]);
-      }, 1000);
-    }
-  };
-
-  const resetGame = () => {
-    setCards(generateCards());
-    setFlippedCards([]);
-    setMatchedCards([]);
-    setMoves(0);
-    setIsGameOver(false);
-    setTime(0);
-    setTimerRunning(false);
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-6">
-      <Card className="w-full max-w-xl bg-white shadow-xl rounded-lg p-6">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-gray-800">Memory Card Game</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4 mb-4">
-            {cards.map((number, index) => (
-              <div
-                key={index}
-                className={`h-24 flex items-center justify-center rounded-lg text-white text-2xl font-bold cursor-pointer transition-transform transform ${
-                  flippedCards.includes(index) || matchedCards.includes(index)
-                    ? "bg-green-500 scale-105"
-                    : "bg-blue-400 hover:scale-105"
-                }`}
-                onClick={() => handleCardClick(index)}
-              >
-                {flippedCards.includes(index) || matchedCards.includes(index)
-                  ? number
-                  : "?"}
-              </div>
+const GameBoard = ({ gridSize, handleCardClick, cards }) => {
+    return (
+        <div
+            className="grid gap-2 p-4 max-w-screen-md mx-auto"
+            style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
+        >
+            {cards.map((card) => (
+                <Card
+                    key={card.id}
+                    className={`w-16 h-16 flex items-center justify-center cursor-pointer ${
+                        card.flipped || card.matched ? "bg-blue-500" : "bg-gray-400"
+                    }`}
+                    onClick={() => handleCardClick(card.id)}
+                >
+                    <CardContent>
+                        <span className="text-white text-xl">
+                            {card.flipped || card.matched ? card.value : ""}
+                        </span>
+                    </CardContent>
+                </Card>
             ))}
-          </div>
-          <div className="flex justify-between">
-            <div>
-              <p className="text-lg font-semibold text-gray-700">Moves: {moves}</p>
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-gray-700">Time: {time}s</p>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-center mt-4">
-          <button
-            onClick={resetGame}
-            className="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition-transform transform hover:scale-105"
-          >
-            {isGameOver ? "Play Again" : "Reset"}
-          </button>
-        </CardFooter>
-      </Card>
-      {isGameOver && (
-        <div className="mt-4 text-2xl font-bold text-white animate-bounce">
-          Congratulations! You matched all cards!
         </div>
-      )}
-    </div>
-  );
-}
+    );
+};
+
+const Dashboard = ({
+    moves,
+    time,
+    resetGame,
+    startGame,
+    difficulty,
+    setDifficulty,
+    isGameActive,
+}) => {
+    return (
+        <div className="p-4">
+            <Card className="mb-4">
+                <CardHeader>
+                    <CardTitle>Game Dashboard</CardTitle>
+                    <CardDescription>Control panel for the game</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex justify-between mb-2">
+                        <span>Moves: {moves}</span>
+                        <span>Time: {time}s</span>
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                        <button
+                            className="bg-green-500 text-white px-4 py-2 rounded"
+                            onClick={startGame}
+                            disabled={isGameActive} // Disable when game is active
+                        >
+                            Start Game
+                        </button>
+                        <button
+                            className="bg-red-500 text-white px-4 py-2 rounded"
+                            onClick={resetGame}
+                        >
+                            Reset Game
+                        </button>
+                        <div className="flex justify-between mt-2">
+                            <label>Difficulty:</label>
+                            <select
+                                value={difficulty}
+                                onChange={(e) =>
+                                    setDifficulty(parseInt(e.target.value))
+                                }
+                                className="border rounded px-2"
+                            >
+                                <option value={4}>Easy</option>
+                                <option value={8}>Medium</option>
+                                <option value={10}>Hard</option>
+                            </select>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
+const App = () => {
+    const [gridSize, setGridSize] = useState(4);
+    const [cards, setCards] = useState([]);
+    const [firstCard, setFirstCard] = useState(null);
+    const [secondCard, setSecondCard] = useState(null);
+    const [moves, setMoves] = useState(0);
+    const [time, setTime] = useState(0);
+    const [gameStarted, setGameStarted] = useState(false);
+    const [timerInterval, setTimerInterval] = useState(null);
+    const [isGameActive, setIsGameActive] = useState(false); // New state for game activity
+
+    useEffect(() => {
+        resetGame();
+    }, [gridSize]);
+
+    useEffect(() => {
+        if (firstCard && secondCard) {
+            if (firstCard.value === secondCard.value) {
+                setCards((prevCards) =>
+                    prevCards.map((card) =>
+                        card.id === firstCard.id || card.id === secondCard.id
+                            ? { ...card, matched: true }
+                            : card
+                    )
+                );
+            } else {
+                setTimeout(() => {
+                    setCards((prevCards) =>
+                        prevCards.map((card) =>
+                            card.id === firstCard.id || card.id === secondCard.id
+                                ? { ...card, flipped: false }
+                                : card
+                        )
+                    );
+                }, 1000);
+            }
+            setFirstCard(null);
+            setSecondCard(null);
+            setMoves((prev) => prev + 1);
+
+            // Check if all cards are matched
+            if (cards.every((card) => card.matched || card.flipped)) {
+                clearInterval(timerInterval); // Stop timer
+                setIsGameActive(false); // Deactivate game
+            }
+        }
+    }, [firstCard, secondCard, cards, timerInterval]);
+
+    const handleCardClick = (id) => {
+        if (firstCard && secondCard) return; // Ignore if two cards are already flipped
+        const clickedCard = cards.find((card) => card.id === id);
+        if (clickedCard.flipped || clickedCard.matched) return; // Ignore already flipped or matched cards
+
+        setCards((prevCards) =>
+            prevCards.map((card) =>
+                card.id === id ? { ...card, flipped: true } : card
+            )
+        );
+
+        if (!firstCard) {
+            setFirstCard(clickedCard); // Set first card if not selected
+        } else {
+            setSecondCard(clickedCard); // Set second card if first is already selected
+        }
+    };
+
+    const resetGame = () => {
+        setCards(generateCards(gridSize));
+        setFirstCard(null);
+        setSecondCard(null);
+        setMoves(0);
+        setTime(0);
+        clearInterval(timerInterval);
+        setGameStarted(false);
+        setIsGameActive(false); // Reset game activity
+    };
+
+    const startGame = () => {
+        if (!gameStarted) {
+            setGameStarted(true);
+            setIsGameActive(true); // Activate game
+            setTimerInterval(
+                setInterval(() => {
+                    setTime((prev) => prev + 1);
+                }, 1000)
+            );
+        }
+    };
+
+    const setDifficulty = (size) => {
+        setGridSize(size);
+        resetGame();
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
+            <div className="flex flex-col md:flex-row justify-center items-center space-x-4">
+                <Dashboard
+                    moves={moves}
+                    time={time}
+                    resetGame={resetGame}
+                    startGame={startGame}
+                    difficulty={gridSize}
+                    setDifficulty={setDifficulty}
+                    isGameActive={isGameActive} // Pass down game activity status
+                />
+                <GameBoard
+                    gridSize={gridSize}
+                    handleCardClick={handleCardClick}
+                    cards={cards}
+                />
+            </div>
+        </div>
+    );
+};
+
+export default App;
