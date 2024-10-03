@@ -81,7 +81,7 @@ function App() {
         <DialogContent className="sm:max-w-[425px] bg-white shadow-lg rounded-lg border border-gray-200 transition-all duration-300">
           <DialogHeader className="bg-blue-500 text-white p-4 rounded-t-lg">
             <DialogTitle className="text-xl font-semibold">{format(selectedDate, 'PP')}</DialogTitle>
-            <DialogDescription>Add or edit your event here.</DialogDescription>
+            <DialogDescription className="text-red">Add or edit your event here.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 px-6">
             <Input
