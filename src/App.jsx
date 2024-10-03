@@ -7,7 +7,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import "./App.css"; // You can add your global Tailwind styles here
+import "./App.css"; 
 
 const generateCards = (size) => {
     let totalCards = size * size;
@@ -114,7 +114,7 @@ const App = () => {
     const [time, setTime] = useState(0);
     const [gameStarted, setGameStarted] = useState(false);
     const [timerInterval, setTimerInterval] = useState(null);
-    const [isGameActive, setIsGameActive] = useState(false); // New state for game activity
+    const [isGameActive, setIsGameActive] = useState(false); 
 
     useEffect(() => {
         resetGame();
@@ -154,9 +154,9 @@ const App = () => {
     }, [firstCard, secondCard, cards, timerInterval]);
 
     const handleCardClick = (id) => {
-        if (firstCard && secondCard) return; // Ignore if two cards are already flipped
+        if (firstCard && secondCard) return; 
         const clickedCard = cards.find((card) => card.id === id);
-        if (clickedCard.flipped || clickedCard.matched) return; // Ignore already flipped or matched cards
+        if (clickedCard.flipped || clickedCard.matched) return; 
 
         setCards((prevCards) =>
             prevCards.map((card) =>
@@ -165,9 +165,9 @@ const App = () => {
         );
 
         if (!firstCard) {
-            setFirstCard(clickedCard); // Set first card if not selected
+            setFirstCard(clickedCard); 
         } else {
-            setSecondCard(clickedCard); // Set second card if first is already selected
+            setSecondCard(clickedCard); 
         }
     };
 
@@ -179,13 +179,13 @@ const App = () => {
         setTime(0);
         clearInterval(timerInterval);
         setGameStarted(false);
-        setIsGameActive(false); // Reset game activity
+        setIsGameActive(false); 
     };
 
     const startGame = () => {
         if (!gameStarted) {
             setGameStarted(true);
-            setIsGameActive(true); // Activate game
+            setIsGameActive(true); 
             setTimerInterval(
                 setInterval(() => {
                     setTime((prev) => prev + 1);
@@ -209,7 +209,7 @@ const App = () => {
                     startGame={startGame}
                     difficulty={gridSize}
                     setDifficulty={setDifficulty}
-                    isGameActive={isGameActive} // Pass down game activity status
+                    isGameActive={isGameActive} 
                 />
                 <GameBoard
                     gridSize={gridSize}
