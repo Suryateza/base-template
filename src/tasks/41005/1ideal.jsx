@@ -232,11 +232,11 @@ const NoteCard = ({
             <CardTitle>{note.title}</CardTitle>
             <CardDescription>{note.body}</CardDescription>
         </CardHeader>
-        <CardFooter className="flex justify-between items-center">
-            <div>
+        <CardFooter className="flex flex-col sm:flex-row justify-between items-center">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-start sm:space-x-2">
                 <button
                     onClick={() => editNote(index)}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
+                    className="bg-yellow-500 text-white px-2 py-1 rounded"
                 >
                     Edit
                 </button>
@@ -247,7 +247,7 @@ const NoteCard = ({
                     Delete
                 </button>
             </div>
-            <div>
+            <div className="mt-2 sm:mt-0">
                 <button
                     onClick={() => togglePinNote(index)}
                     className={`px-2 py-1 rounded ${note.pinned ? "bg-blue-500" : "bg-gray-300"}`}
